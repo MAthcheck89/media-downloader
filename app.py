@@ -228,15 +228,30 @@ def download():
 
     out_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
 
+    # Force yt-dlp to use non-datacenter player clients as fallbacks
+    extractor_args = {
+        'youtube': {
+            'player_client': ['android_creator', 'tv', 'web'],
+            'player_skip': ['configs']
+        }
+    }
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+
     base_opts = {
         'outtmpl': out_template,
+        'extractor_args': extractor_args,
+        'http_headers': headers,
         'nocheckcertificate': True,
         'quiet': True,
         'no_warnings': True,
     }
 
-    # Automatically attach the env-generated cookies file
-    if os.path.exists(COOKIE_FILE_PATH):
+    # Automatically attach the env-generated cookies file if valid
+    if os.path.exists(COOKIE_FILE_PATH) and os.path.getsize(COOKIE_FILE_PATH) > 0:
         base_opts['cookiefile'] = COOKIE_FILE_PATH
 
     if fmt == 'mp3':
