@@ -9,7 +9,14 @@ CORS(app)
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Full Front-End UI served directly from Render root URL
+# Write cookies from Render Environment Variable if present
+COOKIE_FILE_PATH = "/tmp/youtube_cookies.txt"
+cookies_env = os.environ.get("YOUTUBE_COOKIES")
+if cookies_env:
+    with open(COOKIE_FILE_PATH, "w") as f:
+        f.write(cookies_env)
+
+# Web UI served directly from Render root URL
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -221,27 +228,16 @@ def download():
 
     out_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
 
-    # Bypasses cloud datacenter IP blocks via alternative client endpoints
-    extractor_args = {
-        'youtube': {
-            'player_client': ['android_creator', 'tv', 'web_safari'],
-            'player_skip': ['configs', 'webpage']
-        }
-    }
-
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-    }
-
     base_opts = {
         'outtmpl': out_template,
-        'extractor_args': extractor_args,
-        'http_headers': headers,
         'nocheckcertificate': True,
         'quiet': True,
         'no_warnings': True,
     }
+
+    # Automatically attach the env-generated cookies file
+    if os.path.exists(COOKIE_FILE_PATH):
+        base_opts['cookiefile'] = COOKIE_FILE_PATH
 
     if fmt == 'mp3':
         ydl_opts = {
