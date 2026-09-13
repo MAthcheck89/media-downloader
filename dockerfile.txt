@@ -1,15 +1,22 @@
 FROM python:3.10-slim
 
-# Install system dependencies (FFmpeg for conversion, Node.js for JS extraction)
-RUN apt-get update && apt-get install -y ffmpeg nodejs && rm -rf /var/lib/apt/lists/*
+# Install FFmpeg + Node.js
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ffmpeg \
+        nodejs \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-# Install dependencies and force latest yt-dlp pre-release/nightly builds
-RUN pip install --no-cache-dir --upgrade --pre -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY . .
 
-CMD ["gunicorn", "-b", "0.0.0.0:10000", "--timeout", "180", "app:app"]
+# Render provides PORT, but 10000 is the fallback
+CMD ["sh", "-c", "gunicorn -b 0.0.0.0:${PORT:-10000} --timeout 180 app:app"]
