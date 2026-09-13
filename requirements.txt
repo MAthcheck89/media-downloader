@@ -1,4 +1,4 @@
 Flask
 flask-cors
-yt-dlp -U
+yt-dlp --update
 gunicorn
