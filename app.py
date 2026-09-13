@@ -9,7 +9,7 @@ CORS(app)
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Front-End UI served directly from Render root URL
+# Full Front-End UI served directly from Render root URL
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -221,10 +221,10 @@ def download():
 
     out_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
 
-    # Bypasses cloud provider IP blocks by targeting embedded/mobile YouTube API handlers
+    # Bypasses cloud datacenter IP blocks via alternative client endpoints
     extractor_args = {
         'youtube': {
-            'player_client': ['tv_embedded', 'ios', 'mweb', 'android'],
+            'player_client': ['android_creator', 'tv', 'web_safari'],
             'player_skip': ['configs', 'webpage']
         }
     }
