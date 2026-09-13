@@ -1,4 +1,3 @@
-```python
 import os
 import glob
 from flask import Flask, request, jsonify, send_file, render_template_string
@@ -364,29 +363,13 @@ def build_ydl_options(fmt, quality):
         "Accept-Language": "en-US,en;q=0.9",
     }
 
-    base_opts = {
-        "outtmpl": output_template,
-
-        "http_headers": headers,
-
-        "quiet": True,
-        "no_warnings": True,
-
-        "noplaylist": True,
-
-        "retries": 3,
-        "fragment_retries": 3,
-
-        "continuedl": True,
-
-        "restrictfilenames": True,
-
-        "windowsfilenames": True,
-
-        "overwrites": True,
-
-        "socket_timeout": 30,
-    }
+   base_opts = {
+    'outtmpl': out_template,
+    'http_headers': headers,
+    'nocheckcertificate': True,
+    'quiet': True,
+    'no_warnings': True,
+}
 
     # Only use cookies if a valid-looking Netscape cookie
     # file was supplied.
