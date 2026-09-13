@@ -9,14 +9,14 @@ CORS(app)
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Full web interface served directly by Render
+# Front-End UI served directly from Render root URL
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Free Universal Media Downloader</title>
+  <title>Universal Media Downloader</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -115,8 +115,8 @@ HTML_TEMPLATE = """
     <h1>Media Downloader</h1>
     
     <div class="form-group">
-      <label for="url">Paste Link</label>
-      <input type="url" id="url" placeholder="https://..." required>
+      <label for="url">Paste Video Link</label>
+      <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
     </div>
 
     <div class="grid">
@@ -164,12 +164,12 @@ HTML_TEMPLATE = """
       const btn = document.getElementById('dlBtn');
 
       if (!url) {
-        setStatus('Please paste a link first.', 'error');
+        setStatus('Please enter a valid video URL.', 'error');
         return;
       }
 
       btn.disabled = true;
-      setStatus('Processing media request... Please wait.', 'info');
+      setStatus('Downloading and converting media... Please wait.', 'info');
 
       try {
         const response = await fetch('/download', {
@@ -180,20 +180,20 @@ HTML_TEMPLATE = """
 
         if (!response.ok) {
           const errData = await response.json();
-          throw new Error(errData.error || 'Extraction failed.');
+          throw new Error(errData.error || 'Failed to extract media.');
         }
 
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = `media_download.${format}`;
+        a.download = `download.${format}`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         window.URL.revokeObjectURL(downloadUrl);
 
-        setStatus('Download complete!', 'success');
+        setStatus('Download started successfully!', 'success');
       } catch (err) {
         setStatus(`Error: ${err.message}`, 'error');
       } finally {
@@ -211,7 +211,7 @@ def home():
 
 @app.route('/download', methods=['POST'])
 def download():
-    data = request.json
+    data = request.json or {}
     url = data.get('url')
     fmt = data.get('format', 'mp4')
     quality = data.get('quality', '1080')
@@ -221,18 +221,32 @@ def download():
 
     out_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
 
-    # Bypasses YouTube cloud server IP extraction restrictions
+    # Bypasses cloud provider IP blocks by targeting embedded/mobile YouTube API handlers
     extractor_args = {
         'youtube': {
-            'player_client': ['ios', 'mweb', 'tv_embedded']
+            'player_client': ['tv_embedded', 'ios', 'mweb', 'android'],
+            'player_skip': ['configs', 'webpage']
         }
+    }
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+
+    base_opts = {
+        'outtmpl': out_template,
+        'extractor_args': extractor_args,
+        'http_headers': headers,
+        'nocheckcertificate': True,
+        'quiet': True,
+        'no_warnings': True,
     }
 
     if fmt == 'mp3':
         ydl_opts = {
+            **base_opts,
             'format': 'bestaudio/best',
-            'outtmpl': out_template,
-            'extractor_args': extractor_args,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -246,10 +260,9 @@ def download():
             fmt_str = f'bestvideo[height<={quality}][ext=mp4]+bestaudio[ext=m4a]/best[height<={quality}][ext=mp4]/best'
 
         ydl_opts = {
+            **base_opts,
             'format': fmt_str,
-            'outtmpl': out_template,
             'merge_output_format': 'mp4',
-            'extractor_args': extractor_args,
         }
 
     try:
@@ -266,5 +279,5 @@ def download():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
