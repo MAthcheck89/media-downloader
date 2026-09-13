@@ -1,6 +1,9 @@
 FROM python:3.10-slim
 
-# Install FFmpeg + Node.js
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Install FFmpeg, Node.js and CA certificates
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
@@ -10,13 +13,19 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+# Install Python dependencies first
+# so Docker can cache this layer.
 COPY requirements.txt .
 
-# Install dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --upgrade -r requirements.txt
+RUN python -m pip install --no-cache-dir --upgrade pip && \
+    python -m pip install --no-cache-dir --upgrade -r requirements.txt
 
+# Copy application
 COPY . .
 
-# Render provides PORT, but 10000 is the fallback
-CMD ["sh", "-c", "gunicorn -b 0.0.0.0:${PORT:-10000} --timeout 180 app:app"]
+# Show installed yt-dlp version in Render build logs
+RUN yt-dlp --version
+
+# Render uses PORT when provided.
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} --timeout 180 --workers 1 app:app"]
+
