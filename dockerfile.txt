@@ -1,13 +1,13 @@
 FROM python:3.10-slim
 
-# Install system dependencies (FFmpeg and Node.js for JS extraction)
+# Install system dependencies (FFmpeg for conversion, Node.js for JS extraction)
 RUN apt-get update && apt-get install -y ffmpeg nodejs && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-# Install packages and force pre-release/nightly builds for yt-dlp
+# Install dependencies and force latest yt-dlp pre-release/nightly builds
 RUN pip install --no-cache-dir --upgrade --pre -r requirements.txt
 
 COPY . .
