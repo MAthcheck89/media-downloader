@@ -1,4 +1,4 @@
 Flask
 flask-cors
---pre yt-dlp[default]
+yt-dlp
 gunicorn
