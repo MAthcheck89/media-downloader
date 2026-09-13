@@ -9,7 +9,7 @@ CORS(app)
 DOWNLOAD_DIR = "/tmp/downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# HTML UI directly served by Render
+# Full web interface served directly by Render
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -172,7 +172,6 @@ HTML_TEMPLATE = """
       setStatus('Processing media request... Please wait.', 'info');
 
       try {
-        // Automatically calls /download on the exact same server
         const response = await fetch('/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -208,7 +207,6 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def home():
-    # Renders the full web page layout at your main Render URL
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/download', methods=['POST'])
@@ -223,10 +221,18 @@ def download():
 
     out_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
 
+    # Bypasses YouTube cloud server IP extraction restrictions
+    extractor_args = {
+        'youtube': {
+            'player_client': ['ios', 'mweb', 'tv_embedded']
+        }
+    }
+
     if fmt == 'mp3':
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': out_template,
+            'extractor_args': extractor_args,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -243,6 +249,7 @@ def download():
             'format': fmt_str,
             'outtmpl': out_template,
             'merge_output_format': 'mp4',
+            'extractor_args': extractor_args,
         }
 
     try:
